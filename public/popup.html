@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 350px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin: 0;
+    }
+    
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    h1 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(45deg, #1da1f2, #0d8bd9);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(29, 161, 242, 0.4);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      text-align: center;
+    }
+    
+    .status.success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
+    .status.error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    
+    .status.info {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .settings {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .interval-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    
+    .interval-group input {
+      width: 80px;
+    }
+    
+    .warning {
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🤖 Twitter Auto Poster</h1>
+    
+    <div class="warning">
+      ⚠️ Educational purposes only. Use responsibly and comply with Twitter's Terms of Service.
+    </div>
+    
+    <div class="form-group">
+      <label for="apiKey">Groq API Key:</label>
+      <input type="password" id="apiKey" placeholder="Enter your Groq API key">
+    </div>
+    
+    <div class="form-group">
+      <label for="postCount">Number of Posts:</label>
+      <select id="postCount">
+        <option value="1">1 Post</option>
+        <option value="3">3 Posts</option>
+        <option value="5" selected>5 Posts</option>
+        <option value="10">10 Posts</option>
+      </select>
+    </div>
+    
+    <div class="settings">
+      <div class="form-group">
+        <label>Post Interval:</label>
+        <div class="interval-group">
+          <input type="number" id="intervalMin" value="30" min="30" max="120">
+          <span>to</span>
+          <input type="number" id="intervalMax" value="40" min="30" max="120">
+          <span>seconds</span>
+        </div>
+      </div>
+    </div>
+    
+    <button id="startBtn">Start Auto Posting</button>
+    <button id="stopBtn" style="background: linear-gradient(45deg, #ef4444, #dc2626);" disabled>Stop Posting</button>
+    
+    <div id="status"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
