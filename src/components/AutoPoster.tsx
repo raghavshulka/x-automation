@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Square, Clock, Zap, AlertTriangle } from 'lucide-react';
 
+declare global {
+  interface Window {
+    chrome?: any;
+  }
+}
+
+const chrome = window.chrome;
+
+// Helper function to calculate session duration
+const getSessionDuration = (startTime: number) => {
+  const duration = Date.now() - startTime;
+  const minutes = Math.floor(duration / 60000);
+  const seconds = Math.floor((duration % 60000) / 1000);
+  return `${minutes}m ${seconds}s`;
+};
+
 interface AutoPosterProps {
   apiKey: string;
 }
@@ -11,6 +27,8 @@ interface PostingStatus {
   totalPosts: number;
   message: string;
   type: 'info' | 'success' | 'error';
+  sessionStartTime?: number;
+  errors?: Array<{message: string; timestamp: number}>;
 }
 
 const AutoPoster: React.FC<AutoPosterProps> = ({ apiKey }) => {
@@ -34,7 +52,11 @@ const AutoPoster: React.FC<AutoPosterProps> = ({ apiKey }) => {
             ...prev,
             message: request.message,
             type: request.type,
-            isRunning: !request.finished
+            isRunning: !request.finished,
+            currentPost: request.state?.currentPostCount || prev.currentPost,
+            totalPosts: request.state?.totalPosts || prev.totalPosts,
+            sessionStartTime: request.state?.sessionStartTime || prev.sessionStartTime,
+            errors: request.state?.errors || prev.errors
           }));
         }
       };
@@ -179,6 +201,10 @@ const AutoPoster: React.FC<AutoPosterProps> = ({ apiKey }) => {
               <option value={3}>3 Posts</option>
               <option value={5}>5 Posts</option>
               <option value={10}>10 Posts</option>
+              <option value={15}>15 Posts</option>
+              <option value={20}>20 Posts</option>
+              <option value={25}>25 Posts</option>
+              <option value={30}>30 Posts</option>
             </select>
           </div>
 
@@ -260,6 +286,19 @@ const AutoPoster: React.FC<AutoPosterProps> = ({ apiKey }) => {
           </div>
         )}
 
+        {/* Session Info */}
+        {status.sessionStartTime && (
+          <div className="bg-blue-50 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Session Information</h3>
+            <div className="text-sm text-gray-700 space-y-1">
+              <p>Session Duration: {getSessionDuration(status.sessionStartTime)}</p>
+              {status.errors && status.errors.length > 0 && (
+                <p className="text-red-600">Errors encountered: {status.errors.length}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Instructions */}
         <div className="bg-gray-50 rounded-xl p-4">
           <h3 className="text-sm font-semibold text-gray-900 mb-2">How to use Auto Poster:</h3>
@@ -269,6 +308,15 @@ const AutoPoster: React.FC<AutoPosterProps> = ({ apiKey }) => {
             <li>Navigate to Twitter/X and login</li>
             <li>Configure your settings and click "Start Auto Posting"</li>
           </ol>
+          <div className="mt-3 p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              <strong>Enhanced Features:</strong> 
+              • Supports up to 30 posts
+              • 200 character limit per post
+              • Human-like cursor movements (left-right)
+              • 1-2 minute breaks after every 10 posts
+            </p>
+          </div>
         </div>
       </div>
     </div>

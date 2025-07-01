@@ -1,0 +1,9 @@
+{
+  "name": "com.xautomation.cursormover",
+  "description": "Native messaging host for cursor movement",
+  "path": "C:\\Users\\ASUS\\Downloads\\x-automation-main\\x-automation-main\\dist\\cursor_mover.bat",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://klkedclhhhmjdjodclbdbailedbmagca/"
+  ]
+}

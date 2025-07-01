@@ -104,6 +104,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
+  // Add test cursor button
+  const testCursorBtn = document.getElementById('testCursorBtn');
+  testCursorBtn.addEventListener('click', function() {
+    showStatus('Testing cursor movement...', 'info');
+    console.log('🖱️ Testing cursor movement from popup...');
+    
+    // Send message directly to background script
+    chrome.runtime.sendMessage({action: 'moveCursor'}, function(response) {
+      if (chrome.runtime.lastError) {
+        console.error('❌ Error from background:', chrome.runtime.lastError);
+        showStatus('❌ Background script error: ' + chrome.runtime.lastError.message, 'error');
+      } else {
+        console.log('📥 Background response:', response);
+        if (response && response.success) {
+          showStatus('✅ Cursor movement test initiated!', 'success');
+        } else {
+          showStatus('⚠️ Test failed - check console', 'error');
+        }
+      }
+    });
+  });
+
   function showStatus(message, type) {
     statusDiv.textContent = message;
     statusDiv.className = `status ${type}`;

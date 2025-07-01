@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Native Messaging</title>
+</head>
+<body>
+    <h1>Test Native Messaging</h1>
+    <button id="testButton">Test Cursor Movement</button>
+    <div id="output"></div>
+    
+    <script>
+        document.getElementById('testButton').addEventListener('click', function() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Testing native messaging...';
+            
+            try {
+                console.log('🖱️ Starting native messaging test...');
+                const port = chrome.runtime.connectNative('com.xautomation.cursormover');
+                
+                console.log('📤 Sending test message...');
+                port.postMessage({ action: 'moveCursor' });
+                
+                port.onMessage.addListener((response) => {
+                    console.log('📥 Received response:', response);
+                    if (response.success) {
+                        output.innerHTML = '✅ SUCCESS: ' + response.message;
+                    } else {
+                        output.innerHTML = '❌ ERROR: ' + response.error;
+                    }
+                    port.disconnect();
+                });
+                
+                port.onDisconnect.addListener(() => {
+                    if (chrome.runtime.lastError) {
+                        console.error('❌ Native messaging error:', chrome.runtime.lastError.message);
+                        output.innerHTML = '❌ CONNECTION ERROR: ' + chrome.runtime.lastError.message;
+                    }
+                });
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                output.innerHTML = '❌ EXCEPTION: ' + error.message;
+            }
+        });
+    </script>
+</body>
+</html> 

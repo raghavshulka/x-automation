@@ -1,248 +1,163 @@
-// Twitter Auto Poster Content Script with Corrected Post Button Logic
+import React, { useState } from 'react';
+import { RefreshCw, Wand2, Copy, Check } from 'lucide-react';
 
-class TwitterAutoPoster {
-  constructor() {
-    this.isRunning = false;
-    this.currentPostCount = 0;
-    this.totalPosts = 0;
-    this.config = null;
-    this.timeoutId = null;
-  }
+interface ContentGeneratorProps {
+  apiKey: string;
+}
 
-  // --- Core Control Flow ---
+const ContentGenerator: React.FC<ContentGeneratorProps> = ({ apiKey }) => {
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
 
-  async startAutoPosting(config) {
-    if (this.isRunning) {
-      return { success: false, message: 'Already running' };
-    }
-    this.isRunning = true;
-    this.config = config;
-    this.currentPostCount = 0;
-    this.totalPosts = config.postCount;
-    console.log('🚀 Starting Twitter Auto Poster with corrected click logic:', config);
-    this.generateAndPost();
-    return { success: true, message: 'Auto posting started successfully.' };
-  }
-
-  stopAutoPosting() {
-    this.isRunning = false;
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = null;
-    }
-    this.sendStatusUpdate('Auto posting stopped by user.', 'info', true);
-    return { success: true, message: 'Auto posting stopped.' };
-  }
-
-  // --- Main Loop with Improved Structure ---
-
-  scheduleNextPost() {
-    if (!this.isRunning || this.currentPostCount >= this.totalPosts) {
-      if (this.isRunning) {
-        this.isRunning = false;
-        this.sendStatusUpdate(`Completed all ${this.currentPostCount} posts.`, 'success', true);
-      }
+  const generateContent = async () => {
+    if (!apiKey) {
+      setError('Please set your Groq API key first');
       return;
     }
-    const minInterval = this.config.intervalMin * 1000;
-    const maxInterval = this.config.intervalMax * 1000;
-    const randomInterval = this.getRandomDelay(minInterval, maxInterval);
-    this.sendStatusUpdate(
-      `Post ${this.currentPostCount + 1}/${this.totalPosts}. Next post in ${Math.floor(randomInterval / 1000)}s`,
-      'info'
-    );
-    this.timeoutId = setTimeout(() => this.generateAndPost(), randomInterval);
-  }
 
-  async generateAndPost() {
-    if (!this.isRunning) return;
+    setIsGenerating(true);
+    setError('');
+    
     try {
-      this.sendStatusUpdate(`Generating content for post ${this.currentPostCount + 1}...`, 'info');
-      const content = await this.generateContentFromLLM();
-      if (!content) throw new Error('LLM returned empty or invalid content.');
+      const systemPrompt = `Generate a short, engaging tweet about startup building, MVP development, or entrepreneurship. 
+STRICT RULES:
+- Maximum 200 characters (this is mandatory)
+- No emojis
+- Sound authentic and conversational
+- Share practical insights or ask engaging questions
+- Write like a real founder sharing their journey`;
 
-      this.sendStatusUpdate(`Posting: "${content.substring(0, 50)}..."`, 'info');
-      const posted = await this.postToTwitter(content);
+      const prompts = [
+        "Share a practical insight about MVP development",
+        "Share an actionable tip for early-stage startup founders",
+        "Ask an engaging question to help fellow founders",
+        "Share a lesson learned from building products"
+      ];
+      
+      const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
 
-      if (posted) {
-        this.currentPostCount++;
-        this.sendStatusUpdate(`Successfully posted ${this.currentPostCount}/${this.totalPosts}`, 'success');
-      } else {
-        throw new Error('The posting function failed. See console for details.');
-      }
-    } catch (error) {
-      console.error('❌ Error during generateAndPost cycle:', error);
-      this.sendStatusUpdate(`Error: ${error.message}. Retrying...`, 'error');
-    } finally {
-      if (this.isRunning) {
-        this.scheduleNextPost();
-      }
-    }
-  }
-
-  // --- LLM Content Generation (Correct) ---
-  async generateContentFromLLM() {
-    const systemPrompt = `...`; // Your system prompt
-    const prompts = ['...']; // Your prompts
-    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
-    try {
-      if (!this.config.apiKey) {
-        throw new Error("Groq API key is missing.");
-      }
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: 'llama3-70b-8192',
-          messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: randomPrompt }],
-          max_tokens: 280,
-          temperature: 0.8,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: randomPrompt }
+          ],
+          max_tokens: 200,
+          temperature: 0.85,
           top_p: 0.9
         })
       });
+
       if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`API Request Failed (${response.status}): ${errorBody}`);
+        throw new Error(`API request failed: ${response.status}`);
       }
+
       const data = await response.json();
-      const content = data.choices[0]?.message?.content?.trim();
-      if (!content) throw new Error('API response was successful, but content was empty.');
-      return content.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+      let content = data.choices[0]?.message?.content?.trim() || '';
+      
+      // Remove emojis and enforce character limit
+      content = content.replace(
+        /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu,
+        ""
+      );
+      
+      if (content.length > 200) {
+        content = content.substring(0, 197) + "...";
+      }
+      
+      setGeneratedContent(content);
     } catch (error) {
       console.error('Content generation failed:', error);
-      throw error;
+      setError('Failed to generate content. Please try again.');
+    } finally {
+      setIsGenerating(false);
     }
-  }
+  };
 
-  // --- CORRECTED POSTING LOGIC with Wait for Enabled Button ---
-  async postToTwitter(content) {
+  const copyToClipboard = async () => {
     try {
-      console.log('🚀 Starting human-like posting process...');
-      const tweetBox = await this.waitForElement('div[data-testid="tweetTextarea_0"]');
-      if (!tweetBox) {
-        throw new Error('Tweet box not found on page after waiting.');
-      }
-
-      await this.wait(this.getRandomDelay(500, 1000));
-      await this.simulateHumanTyping(tweetBox, content);
-
-      // =========================== THE CRITICAL FIX IS HERE ===========================
-      console.log('⏳ Waiting for the "Post" button to become enabled...');
-      let postButton = null;
-      let attempts = 0;
-      const maxAttempts = 14; // Wait for up to 7 seconds (14 * 500ms)
-
-      while (attempts < maxAttempts) {
-        postButton = this.findAndValidateTweetButton();
-        if (postButton) {
-          console.log('✅ Button is enabled! Proceeding to click.');
-          break; // Exit the loop if an enabled button is found
-        }
-        attempts++;
-        await this.wait(500); // Wait half a second before trying again
-      }
-
-      if (!postButton) {
-        throw new Error('Post button did not become enabled in time.');
-      }
-      // =================================================================================
-
-      await this.simulateHumanClick(postButton);
-      console.log('✅ Posting process completed successfully.');
-      await this.wait(this.getRandomDelay(4000, 5000)); // Wait for post to publish
-      return true;
-
-    } catch (error) {
-      console.error('❌ Failed during postToTwitter:', error);
-      throw error;
+      await navigator.clipboard.writeText(generatedContent);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
-  }
+  };
 
-  /**
-   * **IMPROVED**
-   * Tries multiple selectors to find an enabled Post button.
-   * @returns {Element|null} The enabled button element or null.
-   */
-  findAndValidateTweetButton() {
-    const selectors = [
-        'button[data-testid="tweetButtonInline"]', // Primary and most reliable
-        'button[data-testid="tweetButton"]',
-    ];
+  return (
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="p-6 border-b border-gray-100">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+            <Wand2 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Content Generator</h2>
+            <p className="text-gray-600">Generate tweet ideas (200 char limit)</p>
+          </div>
+        </div>
+      </div>
 
-    for (const selector of selectors) {
-        const button = document.querySelector(selector);
-        if (button) {
-            const isDisabled = button.disabled || button.getAttribute('aria-disabled') === 'true';
-            if (!isDisabled) {
-                // Found an enabled button, return it immediately
-                return button;
-            }
-        }
-    }
-    // If loop finishes, no enabled button was found with any selector
-    return null;
-  }
+      <div className="p-6 space-y-4">
+        {/* Generated Content Display */}
+        {generatedContent && (
+          <div className="bg-gray-50 rounded-xl p-4 relative">
+            <p className="text-gray-800 pr-10">{generatedContent}</p>
+            <div className="absolute top-3 right-3 flex items-center space-x-2">
+              <span className="text-xs text-gray-500">{generatedContent.length}/200</span>
+              <button
+                onClick={copyToClipboard}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Copy to clipboard"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4 text-gray-600" />
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
-  // --- Helpers and Utilities (Unchanged and Correct) ---
-  async simulateHumanTyping(element, text) {
-    element.focus();
-    element.click();
-    for (const char of text) {
-      document.execCommand('insertText', false, char);
-      await this.wait(this.getRandomDelay(40, 110) + (char === ' ' ? 100 : 0));
-    }
-  }
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-3 text-sm">
+            {error}
+          </div>
+        )}
 
-  async simulateHumanClick(element) {
-    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    element.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, cancelable: true }));
-    await this.wait(this.getRandomDelay(200, 400));
-    element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-    await this.wait(this.getRandomDelay(80, 150));
-    element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-    element.click();
-    console.log('🚀 Button click dispatched.');
-  }
+        {/* Generate Button */}
+        <button
+          onClick={generateContent}
+          disabled={isGenerating || !apiKey}
+          className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+        >
+          <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+          <span>{isGenerating ? 'Generating...' : 'Generate Content'}</span>
+        </button>
 
-  async waitForElement(selector, timeout = 7000) {
-    return new Promise(resolve => {
-      const intervalId = setInterval(() => {
-        const element = document.querySelector(selector);
-        if (element) {
-          clearInterval(intervalId);
-          clearTimeout(timeoutId);
-          resolve(element);
-        }
-      }, 500);
-      const timeoutId = setTimeout(() => {
-        clearInterval(intervalId);
-        resolve(null);
-      }, timeout);
-    });
-  }
+        {/* Info */}
+        <div className="bg-blue-50 rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">Content Guidelines:</h3>
+          <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
+            <li>Maximum 200 characters per tweet</li>
+            <li>Authentic, conversational tone</li>
+            <li>No emojis or special characters</li>
+            <li>Focus on value and engagement</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-  getRandomDelay(min, max) { return Math.random() * (max - min) + min; }
-  wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
-  sendStatusUpdate(message, type, finished = false) {
-    if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ action: 'updateStatus', message, type, finished });
-    }
-  }
-}
-
-// --- INITIALIZATION AND MESSAGE LISTENING (Unchanged) ---
-if (window.location.hostname.includes('twitter.com') || window.location.hostname.includes('x.com')) {
-    console.log('🐦 Twitter Auto Poster (Corrected Click Logic) content script loaded.');
-    const autoPoster = new TwitterAutoPoster();
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-        if (request.action === 'startAutoPosting') {
-            autoPoster.startAutoPosting(request.config).then(sendResponse);
-            return true;
-        } else if (request.action === 'stopAutoPosting') {
-            sendResponse(autoPoster.stopAutoPosting());
-        }
-    });
-}
+export default ContentGenerator; 

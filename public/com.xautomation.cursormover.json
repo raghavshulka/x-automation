@@ -1,0 +1,9 @@
+{
+  "name": "com.xautomation.cursormover",
+  "description": "Native messaging host for cursor movement",
+  "path": "cursor_mover.py",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://YOUR_EXTENSION_ID/"
+  ]
+} 
