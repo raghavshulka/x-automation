@@ -2,6 +2,7 @@
 
 **⚠️ EDUCATIONAL PURPOSE ONLY ⚠️**
 
+
 This Chrome extension is created for educational purposes to demonstrate automated web interactions using Chrome extension APIs and content scripts. Please use responsibly and in compliance with Twitter's Terms of Service.
 
 ## Features
